@@ -2,7 +2,7 @@
 title: "cobalt"
 subtitle: "Covariate Balance Tables and Plots"
 author: "Pierce & Megha"
-date: "November 9, 2017"
+date: "April 1, 2020"
 output:
   xaringan::moon_reader:
     lib_dir: libs
@@ -31,6 +31,9 @@ options(htmltools.dir.version = FALSE)
 ```
 
 # Introduction to cobalt
+
+<img style="float: right;" src="noah_greifer.png" hspace = "20">
+
 
 - Developed by Noah Greifer
     - PhD student, UNC Chapel Hill
@@ -192,8 +195,6 @@ class: inverse, middle, center, cobBack
 
 # Libraries
 
-The CRAN version does not work with tibbles but the development version does (but then major functions don't run). Here, we are using the CRAN version.
-
 ```{r warning=FALSE, message=FALSE}
 # install.packages("cobalt")
 library(cobalt)
@@ -209,22 +210,19 @@ library(MatchIt)
 
 # Data
 
-If you use `readr` or `dplyr`, make sure to convert the tibble to a dataframe if using the CRAN version of `cobalt`.
-
 ```{r warning = FALSE, message = FALSE}
 Algebra_dat <-
-  read_csv("datasets/8th-grade-Algebra-data.csv") %>%
+  read_csv("8th-grade-Algebra-data.csv") %>%
   mutate(Locale = factor(Locale, levels = c("R","S","U"), labels = c("Rural","Suburban","Urban")))
 
-# convert to data frame
-Algebra_dat <- Algebra_dat_org <- data.frame(Algebra_dat)
+Algebra_dat_org <- Algebra_dat
 ```
-
-
 
 ---
 
 # Formula
+
+- There is a function in `cobalt` that takes in the outcome and a data frame or tibble containing the covariates and creates a formula based on that. It doesn't seem to have an easy way to add interaction terms or polynomial terms though. 
 
 ```{r}
 # dataset with covariates
@@ -234,7 +232,8 @@ covs <- Algebra_dat %>%
 
 
 ```{r}
-(f_lin <- f.build("D", covs))
+f_lin <- f.build("D", covs)
+f_lin
 ```
 
 ---
@@ -245,10 +244,10 @@ Here, we are just estimating the propensity scores and calculating ATT weights.
 
 ```{r}
 # fitting propensity score model
-PS_logit <- glm(f_lin, data = Algebra_dat, family = "binomial")
+ps_logit <- glm(f_lin, data = Algebra_dat, family = "binomial")
 
 # estimating propensity scores
-Algebra_dat$ps <- predict(PS_logit, type = "response")
+Algebra_dat$ps <- predict(ps_logit, type = "response")
 
 # calculate the weights - ATT weighting by odds of treatment
 Algebra_dat <- Algebra_dat %>%
@@ -285,17 +284,21 @@ bal.tab(f_lin, data = Algebra_dat, weights = "att_wt",
 Adding variance ratios and balance measures for unadjusted sample.
 
 ```{r, eval=FALSE}
-(b_w1 <- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
+b_w1 <- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
                method = "weighting", estimand = "ATT", 
-               disp.v.ratio = TRUE, un = TRUE))
+               disp.v.ratio = TRUE, un = TRUE)
+
+b_w1
 ```
 
 ---
 
 ```{r, echo=FALSE, fig.width = 4, fig.height = 5}
-(b_w1 <- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
+b_w1 <- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
                method = "weighting", estimand = "ATT", 
-               disp.v.ratio = TRUE, un = TRUE))
+               disp.v.ratio = TRUE, un = TRUE)
+
+b_w1
 ```
 
 
@@ -311,7 +314,8 @@ Adding variance ratios and balance measures for unadjusted sample.
 
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, eval = FALSE}
 love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
-          size = 1.5)
+          size = 5, alpha = .7, stars = "raw") + 
+  theme_bw()
 ```
 
 
@@ -322,17 +326,26 @@ love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
 
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, echo = FALSE}
 love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
-          size = 1.5)
+          size = 5, alpha = .7, stars = "raw") + 
+  theme_bw()
 ```
 
+---
+
+# Weighting: Love Plot Default
+
+```{r fig.width = 7, fig.height = 4.5, dpi = 500}
+love.plot(b_w1, threshold = .1, stars = "raw")
+```
 
 ---
 
 # Weighting: Love Plot for Variance Ratios
 
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, eval = FALSE}
-love.plot(b_w1, threshold = 2, colors = c("red", "blue"), 
-          size = 1.5, stat = "variance.ratios")
+love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
+          size = 5, alpha = .7, stat = "variance.ratios", stars = raw) + 
+  theme_bw()
 ```
 
 ---
@@ -341,8 +354,9 @@ love.plot(b_w1, threshold = 2, colors = c("red", "blue"),
 # Weighting: Love Plot for Variance Ratios
 
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, echo = FALSE}
-love.plot(b_w1, threshold = 2, colors = c("red", "blue"), 
-          size = 1.5, stat = "variance.ratios")
+love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
+          size = 5, alpha = .7, stat = "variance.ratios", stars = "raw") + 
+  theme_bw()
 ```
 
 ---
@@ -356,7 +370,7 @@ bal.plot(f_lin, data = Algebra_dat, weights = "att_wt",
          method = "weighting", estimand = "ATT",
          var.name = "SES", which = "both") +
   scale_fill_manual(values = c("red", "blue")) +
-  theme_minimal()
+  theme_bw()
 ```
  
 ---
@@ -369,7 +383,7 @@ bal.plot(f_lin, data = Algebra_dat, weights = "att_wt",
          method = "weighting", estimand = "ATT",
          var.name = "SES", which = "both") +
   scale_fill_manual(values = c("red", "blue")) +
-  theme_minimal()
+  theme_bw()
 ```
 
 ---
@@ -381,9 +395,9 @@ If the covariate is binary, `bal.plot` will create bar plots.
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, eval = FALSE}
 bal.plot(f_lin, data = Algebra_dat, weights = "att_wt", 
          method = "weighting", estimand = "ATT",
-         var.name = "Locale", which = "both") +
+         var.name = "Locale", which = "both", alpha = .2) + # alpha doesn't seem to work?  and position doens't work 
   scale_fill_manual(values = c("red", "blue")) +
-  theme_minimal()
+  theme_bw()
 ```
 
 ---
@@ -393,30 +407,33 @@ bal.plot(f_lin, data = Algebra_dat, weights = "att_wt",
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, echo = FALSE, warning = FALSE, message= FALSE}
 bal.plot(f_lin, data = Algebra_dat, weights = "att_wt", 
          method = "weighting", estimand = "ATT",
-         var.name = "Locale", which = "both") +
+         var.name = "Locale", which = "both", alpha = .2, position = "stack") + # alpha doesn't seem to work? and position doesn't work
   scale_fill_manual(values = c("red", "blue")) +
-  theme_minimal()
+  theme_bw()
 ```
 
 ---
 
 # Weighting: Int and Sq Terms 
 
-Balance should be evaluated for two-way interactions and squared terms of continuous covariates (Stuart, 2010). We can add `int = TRUE` as an argument. 
-
+Balance should be evaluated for two-way interactions and squared terms of continuous covariates (Stuart, 2010). We can add `int = TRUE` and `poly = 2` as arguments. Note that the output presents variance ratios of squared terms which doesn't mean what it should. 
 
 ```{r eval = FALSE}
-(b_w2 <- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
-         method = "weighting", int = TRUE, 
-         estimand = "ATT", disp.v.ratio = TRUE, un = TRUE))
+b_w2 <- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
+         method = "weighting", int = TRUE, poly = 2,
+         estimand = "ATT", disp.v.ratio = TRUE, un = TRUE)
+
+b_w2
 ```
 
 ---
 
 ```{r echo = FALSE}
-(b_w2 <- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
-         method = "weighting", int = TRUE, 
-         estimand = "ATT", disp.v.ratio = TRUE, un = TRUE))
+b_w2 <- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
+         method = "weighting", int = TRUE, poly = 2,
+         estimand = "ATT", disp.v.ratio = TRUE, un = TRUE)
+
+b_w2
 ```
 
 ---
@@ -425,7 +442,8 @@ Balance should be evaluated for two-way interactions and squared terms of contin
 
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, eval = FALSE}
 love.plot(b_w2, threshold = .1, colors = c("red", "blue"), 
-          size = 1.5)
+          size = 5, alpha = .7, stars = "raw") + 
+  theme_bw()
 ```
 
 
@@ -435,7 +453,8 @@ love.plot(b_w2, threshold = .1, colors = c("red", "blue"),
 
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, echo = FALSE}
 love.plot(b_w2, threshold = .1, colors = c("red", "blue"), 
-          size = 1.5)
+          size = 5, alpha = .7, stars = "raw") + 
+  theme_bw()
 ```
 
 ---
@@ -464,12 +483,12 @@ Algebra_dat$quintile <- cut(Algebra_dat$ps, ATT_quint,
 Specify the subclass and method:
 
 ```{r eval = FALSE}
-
-(b_s1 <- bal.tab(f_lin, data = Algebra_dat, subclass = "quintile", 
+b_s1 <- bal.tab(f_lin, data = Algebra_dat, subclass = "quintile", 
          method = "subclassification", disp.subclass = TRUE,
          estimand = "ATT", 
-         disp.v.ratio = TRUE, un = TRUE))
+         disp.v.ratio = TRUE, un = TRUE)
 
+b_s1
 ```
 
 
@@ -477,25 +496,33 @@ Specify the subclass and method:
 ---
 
 ```{r echo = FALSE}
-(b_s1 <- bal.tab(f_lin, data = Algebra_dat, subclass = "quintile", 
+b_s1 <- bal.tab(f_lin, data = Algebra_dat, subclass = "quintile", 
          method = "subclassification", disp.subclass = TRUE,
          estimand = "ATT", 
-         disp.v.ratio = TRUE, un = TRUE))
+         disp.v.ratio = TRUE, un = TRUE)
+
+b_s1
 ```
 
 ---
 
 # Stratification: Across Subclasses
 
-
 ```{r echo = FALSE}
-(bal.tab(f_lin, data = Algebra_dat, subclass = "quintile", 
+bal.tab(f_lin, data = Algebra_dat, subclass = "quintile", 
         method = "subclassification", estimand = "ATT", 
-        disp.v.ratio = TRUE, un = TRUE))
+        disp.v.ratio = TRUE, un = TRUE)
 ```
 
 
-__Does not show variance ratios across subclasses.__ 
+
+---
+
+# Stratification: Love Plot Fail
+
+```{r fig.width = 6.5, fig.height = 4, dpi = 500, error = TRUE}
+love.plot(b_s1)
+```
 
 ---
 
@@ -510,6 +537,8 @@ Matching without replacement
 <br>
 
 ```{r warning = FALSE, message = FALSE}
+Algebra_dat_org <- as.data.frame(Algebra_dat_org)
+
 m_out <- matchit(D ~ Math + SES + Locale , data = Algebra_dat_org,
                  method = "nearest", distance = "logit")
 
@@ -524,7 +553,8 @@ b_m1 <- bal.tab(m_out, un = TRUE, estimand = "ATT",
 
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, eval = FALSE}
 love.plot(b_m1, threshold = .1, colors = c("red", "blue"), 
-          size = 1.5)
+          size = 5, alpha = .7, stars = "raw") + 
+  theme_bw()
 ```
 
 
@@ -534,7 +564,8 @@ love.plot(b_m1, threshold = .1, colors = c("red", "blue"),
 
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, echo = FALSE}
 love.plot(b_m1, threshold = .1, colors = c("red", "blue"), 
-          size = 1.5)
+          size = 5, alpha = .7, stars = "raw") + 
+  theme_bw()
 ```
 
 
@@ -544,8 +575,6 @@ love.plot(b_m1, threshold = .1, colors = c("red", "blue"),
 
 - Matching with replacement- match an untreated unit more than once
 - Caliper- maximum tolerated difference- prevents matching with whatever nearest unit available
-  
-  
   
 ```{r}
 better_match <- matchit(D ~ Math + SES + Locale, 
@@ -580,7 +609,8 @@ b_m2 <- bal.tab(f_lin, data = Algebra_dat,
 
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, eval = FALSE}
 love.plot(b_m2, colors = c("red", "blue", "darkgreen"), 
-          size = 1.5, threshold = .1)
+          size = 5, alpha = .7, threshold = .1, stars = "raw") + 
+  theme_bw()
 ```
 
 ---
@@ -588,7 +618,8 @@ love.plot(b_m2, colors = c("red", "blue", "darkgreen"),
 
 ```{r fig.width = 7, fig.height = 4.5, dpi = 500, echo = FALSE}
 love.plot(b_m2, colors = c("red", "blue", "darkgreen"), 
-          size = 1.5, threshold = .1)
+          size = 5, alpha = .7, threshold = .1, stars = "raw") + 
+  theme_bw()
 ```
 
 ---
@@ -601,9 +632,9 @@ Can compare the two matching methods in `bal.plot` too. Here creating density pl
 bal.plot(f_lin, data = Algebra_dat, 
          weights = data.frame(bad = get.w(m_out),
                               better = get.w(better_match)),
-         method = "weighting", var.name = "SES", which = "both") +
+         method = "weighting", var.name = "SES", which = "both", alpha = .2) + # alpha doesn't work
   scale_fill_manual(values = c("red", "blue")) +
-  theme_minimal()
+  theme_bw()
 ```
 
 ---
@@ -614,7 +645,7 @@ bal.plot(f_lin, data = Algebra_dat,
 bal.plot(f_lin, data = Algebra_dat, 
          weights = data.frame(bad = get.w(m_out),
                               better = get.w(better_match)),
-         method = "weighting", var.name = "SES", which = "both") +
+         method = "weighting", var.name = "SES", which = "both", alpha = .2) +
   scale_fill_manual(values = c("red", "blue")) +
   theme_minimal()
 ```
@@ -624,10 +655,12 @@ bal.plot(f_lin, data = Algebra_dat,
 # Matching: Effective Sample Size
 
 ```{r eval = FALSE}
-(b_m2 <- bal.tab(f_lin, data = Algebra_dat, 
+b_m2 <- bal.tab(f_lin, data = Algebra_dat, 
                   weights = data.frame(bad = get.w(m_out),
                                        better = get.w(better_match)),
-                  method = "weighting", int = TRUE, estimand = "ATT"))
+                  method = "weighting", int = TRUE, estimand = "ATT")
+
+b_m2
 ```
 
 ---
@@ -636,14 +669,6 @@ bal.plot(f_lin, data = Algebra_dat,
 
 ```{r echo = FALSE}
 b_m2
-```
-
----
-
-# matchit Output
-
-```{r}
-bal.tab(better_match)
 ```
 
 ---

@@ -4,7 +4,7 @@
     <title>cobalt</title>
     <meta charset="utf-8" />
     <meta name="author" content="Pierce &amp; Megha" />
-    <meta name="date" content="2017-11-09" />
+    <meta name="date" content="2020-04-01" />
     <link href="libs/remark-css/default.css" rel="stylesheet" />
     <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
   </head>
@@ -15,7 +15,7 @@ class: center, middle, inverse, title-slide
 # cobalt
 ## Covariate Balance Tables and Plots
 ### Pierce &amp; Megha
-### November 9, 2017
+### April 1, 2020
 
 ---
 
@@ -37,6 +37,9 @@ class: center, middle, inverse, title-slide
 
 
 # Introduction to cobalt
+
+&lt;img style="float: right;" src="noah_greifer.png" hspace = "20"&gt;
+
 
 - Developed by Noah Greifer
     - PhD student, UNC Chapel Hill
@@ -198,8 +201,6 @@ class: inverse, middle, center, cobBack
 
 # Libraries
 
-The CRAN version does not work with tibbles but the development version does (but then major functions don't run). Here, we are using the CRAN version.
-
 
 ```r
 # install.packages("cobalt")
@@ -217,23 +218,20 @@ library(MatchIt)
 
 # Data
 
-If you use `readr` or `dplyr`, make sure to convert the tibble to a dataframe if using the CRAN version of `cobalt`.
-
 
 ```r
 Algebra_dat &lt;-
-  read_csv("datasets/8th-grade-Algebra-data.csv") %&gt;%
+  read_csv("8th-grade-Algebra-data.csv") %&gt;%
   mutate(Locale = factor(Locale, levels = c("R","S","U"), labels = c("Rural","Suburban","Urban")))
 
-# convert to data frame
-Algebra_dat &lt;- Algebra_dat_org &lt;- data.frame(Algebra_dat)
+Algebra_dat_org &lt;- Algebra_dat
 ```
-
-
 
 ---
 
 # Formula
+
+- There is a function in `cobalt` that takes in the outcome and a data frame or tibble containing the covariates and creates a formula based on that. It doesn't seem to have an easy way to add interaction terms or polynomial terms though. 
 
 
 ```r
@@ -245,12 +243,13 @@ covs &lt;- Algebra_dat %&gt;%
 
 
 ```r
-(f_lin &lt;- f.build("D", covs))
+f_lin &lt;- f.build("D", covs)
+f_lin
 ```
 
 ```
 ## D ~ Math + SES + Locale
-## &lt;environment: 0x7fe14ec0db70&gt;
+## &lt;environment: 0x7fd33d088808&gt;
 ```
 
 ---
@@ -262,10 +261,10 @@ Here, we are just estimating the propensity scores and calculating ATT weights.
 
 ```r
 # fitting propensity score model
-PS_logit &lt;- glm(f_lin, data = Algebra_dat, family = "binomial")
+ps_logit &lt;- glm(f_lin, data = Algebra_dat, family = "binomial")
 
 # estimating propensity scores
-Algebra_dat$ps &lt;- predict(PS_logit, type = "response")
+Algebra_dat$ps &lt;- predict(ps_logit, type = "response")
 
 # calculate the weights - ATT weighting by odds of treatment
 Algebra_dat &lt;- Algebra_dat %&gt;%
@@ -322,9 +321,11 @@ Adding variance ratios and balance measures for unadjusted sample.
 
 
 ```r
-(b_w1 &lt;- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
+b_w1 &lt;- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
                method = "weighting", estimand = "ATT", 
-               disp.v.ratio = TRUE, un = TRUE))
+               disp.v.ratio = TRUE, un = TRUE)
+
+b_w1
 ```
 
 ---
@@ -359,7 +360,8 @@ Adding variance ratios and balance measures for unadjusted sample.
 
 ```r
 love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
-          size = 1.5)
+          size = 5, alpha = .7, stars = "raw") + 
+  theme_bw()
 ```
 
 
@@ -368,8 +370,18 @@ love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
 # Weighting: Love Plot
 
 
-![](cobalt_presentation_files/figure-html/unnamed-chunk-12-1.png)&lt;!-- --&gt;
+![](cobalt_pres_files/figure-html/unnamed-chunk-12-1.png)&lt;!-- --&gt;
 
+---
+
+# Weighting: Love Plot Default
+
+
+```r
+love.plot(b_w1, threshold = .1, stars = "raw")
+```
+
+![](cobalt_pres_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
 
 ---
 
@@ -377,8 +389,9 @@ love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
 
 
 ```r
-love.plot(b_w1, threshold = 2, colors = c("red", "blue"), 
-          size = 1.5, stat = "variance.ratios")
+love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
+          size = 5, alpha = .7, stat = "variance.ratios", stars = raw) + 
+  theme_bw()
 ```
 
 ---
@@ -386,7 +399,7 @@ love.plot(b_w1, threshold = 2, colors = c("red", "blue"),
 
 # Weighting: Love Plot for Variance Ratios
 
-![](cobalt_presentation_files/figure-html/unnamed-chunk-14-1.png)&lt;!-- --&gt;
+![](cobalt_pres_files/figure-html/unnamed-chunk-15-1.png)&lt;!-- --&gt;
 
 ---
 
@@ -400,7 +413,7 @@ bal.plot(f_lin, data = Algebra_dat, weights = "att_wt",
          method = "weighting", estimand = "ATT",
          var.name = "SES", which = "both") +
   scale_fill_manual(values = c("red", "blue")) +
-  theme_minimal()
+  theme_bw()
 ```
  
 ---
@@ -410,11 +423,11 @@ bal.plot(f_lin, data = Algebra_dat, weights = "att_wt",
 
 
 ```
-## Scale for 'fill' is already present. Adding another scale for 'fill',
-## which will replace the existing scale.
+## Scale for 'fill' is already present. Adding another scale for 'fill', which
+## will replace the existing scale.
 ```
 
-![](cobalt_presentation_files/figure-html/unnamed-chunk-16-1.png)&lt;!-- --&gt;
+![](cobalt_pres_files/figure-html/unnamed-chunk-17-1.png)&lt;!-- --&gt;
 
 ---
 
@@ -426,29 +439,30 @@ If the covariate is binary, `bal.plot` will create bar plots.
 ```r
 bal.plot(f_lin, data = Algebra_dat, weights = "att_wt", 
          method = "weighting", estimand = "ATT",
-         var.name = "Locale", which = "both") +
+         var.name = "Locale", which = "both", alpha = .2) + # alpha doesn't seem to work?  and position doens't work 
   scale_fill_manual(values = c("red", "blue")) +
-  theme_minimal()
+  theme_bw()
 ```
 
 ---
 
 # Weighting: Bar Plot (Locale)
 
-![](cobalt_presentation_files/figure-html/unnamed-chunk-18-1.png)&lt;!-- --&gt;
+![](cobalt_pres_files/figure-html/unnamed-chunk-19-1.png)&lt;!-- --&gt;
 
 ---
 
 # Weighting: Int and Sq Terms 
 
-Balance should be evaluated for two-way interactions and squared terms of continuous covariates (Stuart, 2010). We can add `int = TRUE` as an argument. 
-
+Balance should be evaluated for two-way interactions and squared terms of continuous covariates (Stuart, 2010). We can add `int = TRUE` and `poly = 2` as arguments. Note that the output presents variance ratios of squared terms which doesn't mean what it should. 
 
 
 ```r
-(b_w2 &lt;- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
-         method = "weighting", int = TRUE, 
-         estimand = "ATT", disp.v.ratio = TRUE, un = TRUE))
+b_w2 &lt;- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
+         method = "weighting", int = TRUE, poly = 2,
+         estimand = "ATT", disp.v.ratio = TRUE, un = TRUE)
+
+b_w2
 ```
 
 ---
@@ -462,6 +476,8 @@ Balance should be evaluated for two-way interactions and squared terms of contin
 ## Locale_Rural            Binary -0.0235             -0.0398            
 ## Locale_Suburban         Binary  0.0855             -0.0288            
 ## Locale_Urban            Binary -0.0620              0.0686            
+## Math²                  Contin.  0.5315     1.1252   0.1364      0.9713
+## SES²                   Contin.  1.3007     1.6729   0.1951      1.0783
 ## Math * SES             Contin.  1.5159     1.5552   0.2509      1.3351
 ## Math * Locale_Rural    Contin. -0.0311     1.0174  -0.0897      0.8926
 ## Math * Locale_Suburban Contin.  0.2058     1.2359  -0.0468      0.9861
@@ -483,7 +499,8 @@ Balance should be evaluated for two-way interactions and squared terms of contin
 
 ```r
 love.plot(b_w2, threshold = .1, colors = c("red", "blue"), 
-          size = 1.5)
+          size = 5, alpha = .7, stars = "raw") + 
+  theme_bw()
 ```
 
 
@@ -491,7 +508,7 @@ love.plot(b_w2, threshold = .1, colors = c("red", "blue"),
 
 # Int &amp; Sq Terms: Love Plot
 
-![](cobalt_presentation_files/figure-html/unnamed-chunk-22-1.png)&lt;!-- --&gt;
+![](cobalt_pres_files/figure-html/unnamed-chunk-23-1.png)&lt;!-- --&gt;
 
 ---
 
@@ -521,10 +538,12 @@ Specify the subclass and method:
 
 
 ```r
-(b_s1 &lt;- bal.tab(f_lin, data = Algebra_dat, subclass = "quintile", 
+b_s1 &lt;- bal.tab(f_lin, data = Algebra_dat, subclass = "quintile", 
          method = "subclassification", disp.subclass = TRUE,
          estimand = "ATT", 
-         disp.v.ratio = TRUE, un = TRUE))
+         disp.v.ratio = TRUE, un = TRUE)
+
+b_s1
 ```
 
 
@@ -575,18 +594,18 @@ Specify the subclass and method:
 ## Locale_Urban     Binary   0.2705            
 ## 
 ## Balance measures across subclasses
-##                    Type Diff.Un V.Ratio.Un Diff.Adj
-## Math            Contin.  0.5415     1.0440   0.0612
-## SES             Contin.  1.4009     1.2191   0.1537
-## Locale_Rural     Binary -0.0235             -0.0603
-## Locale_Suburban  Binary  0.0855             -0.0212
-## Locale_Urban     Binary -0.0620              0.0815
+##                    Type Diff.Un V.Ratio.Un Diff.Adj V.Ratio.Adj
+## Math            Contin.  0.5415     1.0440   0.0612      1.0376
+## SES             Contin.  1.4009     1.2191   0.1537      0.9329
+## Locale_Rural     Binary -0.0235             -0.0603            
+## Locale_Suburban  Binary  0.0855             -0.0212            
+## Locale_Urban     Binary -0.0620              0.0815            
 ## 
-## Sample sizes
-##         Subclass A Subclass B Subclass C Subclass D Subclass E
-## Control        258         62         18          6          2
-## Treated        122        122        122        122        122
-## Total          380        184        140        128        124
+## Sample sizes by subclass
+##           A   B   C   D   E  All
+## Control 258  62  18   6   2  390
+## Treated 122 122 122 122 122  610
+## Total   380 184 140 128 124 1000
 ```
 
 ---
@@ -594,25 +613,36 @@ Specify the subclass and method:
 # Stratification: Across Subclasses
 
 
-
 ```
 ## Balance measures across subclasses
-##                    Type Diff.Un V.Ratio.Un Diff.Adj
-## Math            Contin.  0.5415     1.0440   0.0612
-## SES             Contin.  1.4009     1.2191   0.1537
-## Locale_Rural     Binary -0.0235             -0.0603
-## Locale_Suburban  Binary  0.0855             -0.0212
-## Locale_Urban     Binary -0.0620              0.0815
+##                    Type Diff.Un V.Ratio.Un Diff.Adj V.Ratio.Adj
+## Math            Contin.  0.5415     1.0440   0.0612      1.0376
+## SES             Contin.  1.4009     1.2191   0.1537      0.9329
+## Locale_Rural     Binary -0.0235             -0.0603            
+## Locale_Suburban  Binary  0.0855             -0.0212            
+## Locale_Urban     Binary -0.0620              0.0815            
 ## 
-## Sample sizes
-##         Subclass A Subclass B Subclass C Subclass D Subclass E
-## Control        258         62         18          6          2
-## Treated        122        122        122        122        122
-## Total          380        184        140        128        124
+## Sample sizes by subclass
+##           A   B   C   D   E  All
+## Control 258  62  18   6   2  390
+## Treated 122 122 122 122 122  610
+## Total   380 184 140 128 124 1000
 ```
 
 
-__Does not show variance ratios across subclasses.__ 
+
+---
+
+# Stratification: Love Plot Fail
+
+
+```r
+love.plot(b_s1)
+```
+
+```
+## Error in is_not_null(facet): object 'facet' not found
+```
 
 ---
 
@@ -628,6 +658,8 @@ Matching without replacement
 
 
 ```r
+Algebra_dat_org &lt;- as.data.frame(Algebra_dat_org)
+
 m_out &lt;- matchit(D ~ Math + SES + Locale , data = Algebra_dat_org,
                  method = "nearest", distance = "logit")
 
@@ -643,7 +675,8 @@ b_m1 &lt;- bal.tab(m_out, un = TRUE, estimand = "ATT",
 
 ```r
 love.plot(b_m1, threshold = .1, colors = c("red", "blue"), 
-          size = 1.5)
+          size = 5, alpha = .7, stars = "raw") + 
+  theme_bw()
 ```
 
 
@@ -651,7 +684,7 @@ love.plot(b_m1, threshold = .1, colors = c("red", "blue"),
 
 # Matching: Love Plot
 
-![](cobalt_presentation_files/figure-html/unnamed-chunk-29-1.png)&lt;!-- --&gt;
+![](cobalt_pres_files/figure-html/unnamed-chunk-31-1.png)&lt;!-- --&gt;
 
 
 
@@ -660,8 +693,6 @@ love.plot(b_m1, threshold = .1, colors = c("red", "blue"),
 
 - Matching with replacement- match an untreated unit more than once
 - Caliper- maximum tolerated difference- prevents matching with whatever nearest unit available
-  
-  
   
 
 ```r
@@ -698,13 +729,14 @@ b_m2 &lt;- bal.tab(f_lin, data = Algebra_dat,
 
 ```r
 love.plot(b_m2, colors = c("red", "blue", "darkgreen"), 
-          size = 1.5, threshold = .1)
+          size = 5, alpha = .7, threshold = .1, stars = "raw") + 
+  theme_bw()
 ```
 
 ---
 # Better Match: Love Plot
 
-![](cobalt_presentation_files/figure-html/unnamed-chunk-33-1.png)&lt;!-- --&gt;
+![](cobalt_pres_files/figure-html/unnamed-chunk-35-1.png)&lt;!-- --&gt;
 
 ---
 
@@ -717,9 +749,9 @@ Can compare the two matching methods in `bal.plot` too. Here creating density pl
 bal.plot(f_lin, data = Algebra_dat, 
          weights = data.frame(bad = get.w(m_out),
                               better = get.w(better_match)),
-         method = "weighting", var.name = "SES", which = "both") +
+         method = "weighting", var.name = "SES", which = "both", alpha = .2) + # alpha doesn't work
   scale_fill_manual(values = c("red", "blue")) +
-  theme_minimal()
+  theme_bw()
 ```
 
 ---
@@ -728,11 +760,15 @@ bal.plot(f_lin, data = Algebra_dat,
 
 
 ```
-## Scale for 'fill' is already present. Adding another scale for 'fill',
-## which will replace the existing scale.
+## Warning: `expand_scale()` is deprecated; use `expansion()` instead.
 ```
 
-![](cobalt_presentation_files/figure-html/unnamed-chunk-35-1.png)&lt;!-- --&gt;
+```
+## Scale for 'fill' is already present. Adding another scale for 'fill', which
+## will replace the existing scale.
+```
+
+![](cobalt_pres_files/figure-html/unnamed-chunk-37-1.png)&lt;!-- --&gt;
 
 ---
 
@@ -740,10 +776,12 @@ bal.plot(f_lin, data = Algebra_dat,
 
 
 ```r
-(b_m2 &lt;- bal.tab(f_lin, data = Algebra_dat, 
+b_m2 &lt;- bal.tab(f_lin, data = Algebra_dat, 
                   weights = data.frame(bad = get.w(m_out),
                                        better = get.w(better_match)),
-                  method = "weighting", int = TRUE, estimand = "ATT"))
+                  method = "weighting", int = TRUE, estimand = "ATT")
+
+b_m2
 ```
 
 ---
@@ -754,54 +792,24 @@ bal.plot(f_lin, data = Algebra_dat,
 ```
 ## Balance Measures
 ##                           Type Diff.bad Diff.better
-## Math                   Contin.   0.7189      0.0392
-## SES                    Contin.   1.9535      0.0702
-## Locale_Rural            Binary  -0.0359     -0.0541
-## Locale_Suburban         Binary   0.1128     -0.0377
-## Locale_Urban            Binary  -0.0769      0.0918
-## Math * SES             Contin.   2.1235      0.0977
-## Math * Locale_Rural    Contin.  -0.0535     -0.1220
-## Math * Locale_Suburban Contin.   0.2715     -0.0785
-## Math * Locale_Urban    Contin.  -0.1052      0.1867
-## SES * Locale_Rural     Contin.   0.1167     -0.1478
-## SES * Locale_Suburban  Contin.   0.4616     -0.0816
-## SES * Locale_Urban     Contin.   0.1700      0.2287
+## Math                   Contin.   0.7189      0.0839
+## SES                    Contin.   1.9535      0.0595
+## Locale_Rural            Binary  -0.0359     -0.0508
+## Locale_Suburban         Binary   0.1128     -0.0656
+## Locale_Urban            Binary  -0.0769      0.1164
+## Math * SES             Contin.   2.1235      0.1086
+## Math * Locale_Rural    Contin.  -0.0535     -0.1247
+## Math * Locale_Suburban Contin.   0.2715     -0.1218
+## Math * Locale_Urban    Contin.  -0.1052      0.2401
+## SES * Locale_Rural     Contin.   0.1167     -0.1331
+## SES * Locale_Suburban  Contin.   0.4616     -0.1377
+## SES * Locale_Urban     Contin.   0.1700      0.2693
 ## 
 ## Effective sample sizes
 ##        Control Treated
 ## All    390.000     610
 ## bad    390.000     390
-## better  32.606     610
-```
-
----
-
-# matchit Output
-
-
-```r
-bal.tab(better_match)
-```
-
-```
-## Call
-##  matchit(formula = D ~ Math + SES + Locale, data = Algebra_dat_org, 
-##     method = "nearest", distance = "logit", replace = TRUE, caliper = 0.1)
-## 
-## Balance Measures
-##                     Type Diff.Adj
-## distance        Distance   0.0132
-## Math             Contin.   0.0392
-## SES              Contin.   0.0702
-## Locale_Rural      Binary  -0.0541
-## Locale_Suburban   Binary  -0.0377
-## Locale_Urban      Binary   0.0918
-## 
-## Sample sizes
-##           Control Treated
-## All           390     610
-## Matched       169     610
-## Unmatched     221       0
+## better  35.364     610
 ```
 
 ---
