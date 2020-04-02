@@ -123,7 +123,7 @@ __Standardized difference in means__: the estimate of mean difference (before/ a
 - Stuart (2008) recommended use of standard deviation from unadjusted sample even when checking balance after conditioning
    -  Compare mean differences in unadjusted and adjusted sample- the denominator is the same
 
-- sd in treated group (default for ATT), control group (ATC), or pooled sd (ATE)
+- sd in treated group (default for ATT), untreated group (ATU), or pooled sd (ATE)
 
 - Threshold of .1 is recommended by Stuart et al. (2013).
       
@@ -183,11 +183,13 @@ Assess balance on two-way interactions and squared terms (Rubin, 2001; Austin, 2
 __Effective Sample Size__ - "a measure of the sample size a non-weighted sample would have to have to achieve the same level of precision as the weighted sample" (Greifer, 2017; Ridgeway et al., 2016)
 
 `$$ESS = \frac{\left(\sum_{i=1}^n w_i\right)^2}{\sum_{i=1}^n w_i^2}$$`
-  - Proportionally larger weights lead to lower ESS (Notes from Tuesday)
+  - Proportionally larger weights lead to: 
   
-  - Large variance of weighted mean
+      - Lower ESS
   
-  - Loss of precision
+      - Larger variance of weighted mean
+  
+      - Loss of precision
   
   - `cobalt` calculates ESS 
 
@@ -222,7 +224,9 @@ library(MatchIt)
 ```r
 Algebra_dat &lt;-
   read_csv("8th-grade-Algebra-data.csv") %&gt;%
-  mutate(Locale = factor(Locale, levels = c("R","S","U"), labels = c("Rural","Suburban","Urban")))
+  mutate(Locale = factor(Locale, 
+                         levels = c("R","S","U"), 
+                         labels = c("Rural","Suburban","Urban")))
 
 Algebra_dat_org &lt;- Algebra_dat
 ```
@@ -249,7 +253,7 @@ f_lin
 
 ```
 ## D ~ Math + SES + Locale
-## &lt;environment: 0x7fd33d088808&gt;
+## &lt;environment: 0x7fb46c36b558&gt;
 ```
 
 ---
@@ -280,9 +284,11 @@ Just a table with standardized difference in means after adjustment. `cobalt` no
 
 
 ```r
-bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
-               method = "weighting", estimand = "ATT", 
-               m.threshold = .1)
+bal.tab(f_lin,   # formula
+        data = Algebra_dat, # data
+        weights = "att_wt", # weights
+        method = "weighting", # method
+        m.threshold = .1) # threshold to judge
 ```
 
 ---
@@ -321,9 +327,12 @@ Adding variance ratios and balance measures for unadjusted sample.
 
 
 ```r
-b_w1 &lt;- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
-               method = "weighting", estimand = "ATT", 
-               disp.v.ratio = TRUE, un = TRUE)
+b_w1 &lt;- bal.tab(f_lin, 
+                data = Algebra_dat, 
+                weights = "att_wt", 
+                method = "weighting", 
+                disp.v.ratio = TRUE, # ask for var ratios
+                un = TRUE) # asked for unadjusted sample stats
 
 b_w1
 ```
@@ -359,8 +368,12 @@ b_w1
 
 
 ```r
-love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
-          size = 5, alpha = .7, stars = "raw") + 
+love.plot(b_w1,   # add the table here
+          threshold = .1, # threshold
+          colors = c("red", "blue"), # change the colors
+          size = 3, # size of dots
+          alpha = .7,  # transparency
+          stars = "raw") + # change the x axis label
   theme_bw()
 ```
 
@@ -370,7 +383,7 @@ love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
 # Weighting: Love Plot
 
 
-![](cobalt_pres_files/figure-html/unnamed-chunk-12-1.png)&lt;!-- --&gt;
+&lt;img src="cobalt_pres_files/figure-html/unnamed-chunk-12-1.png" style="display: block; margin: auto;" /&gt;
 
 ---
 
@@ -378,10 +391,12 @@ love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
 
 
 ```r
-love.plot(b_w1, threshold = .1, stars = "raw")
+love.plot(b_w1, 
+          threshold = .1, 
+          stars = "raw")
 ```
 
-![](cobalt_pres_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
+&lt;img src="cobalt_pres_files/figure-html/unnamed-chunk-13-1.png" style="display: block; margin: auto;" /&gt;
 
 ---
 
@@ -389,8 +404,13 @@ love.plot(b_w1, threshold = .1, stars = "raw")
 
 
 ```r
-love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
-          size = 5, alpha = .7, stat = "variance.ratios", stars = raw) + 
+love.plot(b_w1, 
+          threshold = .1, 
+          colors = c("red", "blue"),
+          size = 3, 
+          alpha = .7, 
+          stat = "variance.ratios", # just ask for var ratios here
+          stars = "raw") + 
   theme_bw()
 ```
 
@@ -399,7 +419,7 @@ love.plot(b_w1, threshold = .1, colors = c("red", "blue"),
 
 # Weighting: Love Plot for Variance Ratios
 
-![](cobalt_pres_files/figure-html/unnamed-chunk-15-1.png)&lt;!-- --&gt;
+&lt;img src="cobalt_pres_files/figure-html/unnamed-chunk-15-1.png" style="display: block; margin: auto;" /&gt;
 
 ---
 
@@ -409,10 +429,13 @@ Balance plots to evaluate similarities in univariate distributions of a covariat
 
 
 ```r
-bal.plot(f_lin, data = Algebra_dat, weights = "att_wt", 
-         method = "weighting", estimand = "ATT",
-         var.name = "SES", which = "both") +
-  scale_fill_manual(values = c("red", "blue")) +
+bal.plot(f_lin, 
+         data = Algebra_dat, 
+         weights = "att_wt", 
+         method = "weighting", 
+         var.name = "SES", # ask for a particular variable SES
+         which = "both", # ask for both unadjusted and adjusted samples
+         colors = c("red", "blue")) +
   theme_bw()
 ```
  
@@ -421,13 +444,7 @@ bal.plot(f_lin, data = Algebra_dat, weights = "att_wt",
 
 # Weighting: Density Plot (SES)
 
-
-```
-## Scale for 'fill' is already present. Adding another scale for 'fill', which
-## will replace the existing scale.
-```
-
-![](cobalt_pres_files/figure-html/unnamed-chunk-17-1.png)&lt;!-- --&gt;
+&lt;img src="cobalt_pres_files/figure-html/unnamed-chunk-17-1.png" style="display: block; margin: auto;" /&gt;
 
 ---
 
@@ -437,10 +454,15 @@ If the covariate is binary, `bal.plot` will create bar plots.
 
 
 ```r
-bal.plot(f_lin, data = Algebra_dat, weights = "att_wt", 
-         method = "weighting", estimand = "ATT",
-         var.name = "Locale", which = "both", alpha = .2) + # alpha doesn't seem to work?  and position doens't work 
-  scale_fill_manual(values = c("red", "blue")) +
+bal.plot(f_lin, 
+         data = Algebra_dat, 
+         weights = "att_wt", 
+         method = "weighting", 
+         var.name = "Locale", 
+         which = "both",
+         alpha = .2,  
+         position = "stack", #alpha and position don't get passed to geom_bar()
+         colors = c("red", "blue")) +
   theme_bw()
 ```
 
@@ -448,7 +470,7 @@ bal.plot(f_lin, data = Algebra_dat, weights = "att_wt",
 
 # Weighting: Bar Plot (Locale)
 
-![](cobalt_pres_files/figure-html/unnamed-chunk-19-1.png)&lt;!-- --&gt;
+&lt;img src="cobalt_pres_files/figure-html/unnamed-chunk-19-1.png" style="display: block; margin: auto;" /&gt;
 
 ---
 
@@ -458,9 +480,14 @@ Balance should be evaluated for two-way interactions and squared terms of contin
 
 
 ```r
-b_w2 &lt;- bal.tab(f_lin, data = Algebra_dat, weights = "att_wt", 
-         method = "weighting", int = TRUE, poly = 2,
-         estimand = "ATT", disp.v.ratio = TRUE, un = TRUE)
+b_w2 &lt;- bal.tab(f_lin, 
+                data = Algebra_dat, 
+                weights = "att_wt", 
+                method = "weighting", 
+                int = TRUE,  # add interaction terms
+                poly = 2, # add sq terms
+                disp.v.ratio = TRUE, 
+                un = TRUE)
 
 b_w2
 ```
@@ -498,8 +525,12 @@ b_w2
 
 
 ```r
-love.plot(b_w2, threshold = .1, colors = c("red", "blue"), 
-          size = 5, alpha = .7, stars = "raw") + 
+love.plot(b_w2, 
+          threshold = .1, 
+          colors = c("red", "blue"), 
+          size = 3, 
+          alpha = .7, 
+          stars = "raw") + 
   theme_bw()
 ```
 
@@ -508,7 +539,7 @@ love.plot(b_w2, threshold = .1, colors = c("red", "blue"),
 
 # Int &amp; Sq Terms: Love Plot
 
-![](cobalt_pres_files/figure-html/unnamed-chunk-23-1.png)&lt;!-- --&gt;
+&lt;img src="cobalt_pres_files/figure-html/unnamed-chunk-23-1.png" style="display: block; margin: auto;" /&gt;
 
 ---
 
@@ -538,10 +569,13 @@ Specify the subclass and method:
 
 
 ```r
-b_s1 &lt;- bal.tab(f_lin, data = Algebra_dat, subclass = "quintile", 
-         method = "subclassification", disp.subclass = TRUE,
-         estimand = "ATT", 
-         disp.v.ratio = TRUE, un = TRUE)
+b_s1 &lt;- bal.tab(f_lin, 
+                data = Algebra_dat, 
+                subclass = "quintile",  # add the variable that defines subclasses
+                method = "subclassification", # specify method
+                disp.subclass = TRUE,
+                disp.v.ratio = TRUE, 
+                un = TRUE)
 
 b_s1
 ```
@@ -663,8 +697,9 @@ Algebra_dat_org &lt;- as.data.frame(Algebra_dat_org)
 m_out &lt;- matchit(D ~ Math + SES + Locale , data = Algebra_dat_org,
                  method = "nearest", distance = "logit")
 
-b_m1 &lt;- bal.tab(m_out, un = TRUE, estimand = "ATT", 
-        int = TRUE)
+b_m1 &lt;- bal.tab(m_out,   # the output of matchit
+                un = TRUE, 
+                int = TRUE)
 ```
 
 
@@ -674,8 +709,12 @@ b_m1 &lt;- bal.tab(m_out, un = TRUE, estimand = "ATT",
 
 
 ```r
-love.plot(b_m1, threshold = .1, colors = c("red", "blue"), 
-          size = 5, alpha = .7, stars = "raw") + 
+love.plot(b_m1, 
+          threshold = .1, 
+          colors = c("red", "blue"), 
+          size = 3, 
+          alpha = .7, 
+          stars = "raw") + 
   theme_bw()
 ```
 
@@ -684,7 +723,7 @@ love.plot(b_m1, threshold = .1, colors = c("red", "blue"),
 
 # Matching: Love Plot
 
-![](cobalt_pres_files/figure-html/unnamed-chunk-31-1.png)&lt;!-- --&gt;
+&lt;img src="cobalt_pres_files/figure-html/unnamed-chunk-31-1.png" style="display: block; margin: auto;" /&gt;
 
 
 
@@ -715,10 +754,13 @@ better_match &lt;- matchit(D ~ Math + SES + Locale,
 
 
 ```r
-b_m2 &lt;- bal.tab(f_lin, data = Algebra_dat, 
-                  weights = data.frame(bad = get.w(m_out),
-                                       better = get.w(better_match)),
-                  method = "weighting", int = TRUE, estimand = "ATT")
+b_m2 &lt;- bal.tab(f_lin, 
+                data = Algebra_dat, 
+                weights = data.frame(   # create a data frame with weights
+                    bad = get.w(m_out),
+                    better = get.w(better_match)),
+                method = "weighting", 
+                int = TRUE)
 ```
 
 
@@ -728,15 +770,19 @@ b_m2 &lt;- bal.tab(f_lin, data = Algebra_dat,
 
 
 ```r
-love.plot(b_m2, colors = c("red", "blue", "darkgreen"), 
-          size = 5, alpha = .7, threshold = .1, stars = "raw") + 
+love.plot(b_m2, 
+          colors = c("red", "blue", "darkgreen"), 
+          size = 3, 
+          alpha = .7, 
+          threshold = .1, 
+          stars = "raw") + 
   theme_bw()
 ```
 
 ---
 # Better Match: Love Plot
 
-![](cobalt_pres_files/figure-html/unnamed-chunk-35-1.png)&lt;!-- --&gt;
+&lt;img src="cobalt_pres_files/figure-html/unnamed-chunk-35-1.png" style="display: block; margin: auto;" /&gt;
 
 ---
 
@@ -746,11 +792,16 @@ Can compare the two matching methods in `bal.plot` too. Here creating density pl
 
 
 ```r
-bal.plot(f_lin, data = Algebra_dat, 
-         weights = data.frame(bad = get.w(m_out),
-                              better = get.w(better_match)),
-         method = "weighting", var.name = "SES", which = "both", alpha = .2) + # alpha doesn't work
-  scale_fill_manual(values = c("red", "blue")) +
+bal.plot(f_lin, 
+         data = Algebra_dat, 
+         weights = data.frame(  # create a data frame with weights
+           bad = get.w(m_out),
+           better = get.w(better_match)),
+         method = "weighting", 
+         var.name = "SES", # specify var name
+         colors = c("red", "blue"),
+         which = "both", 
+         alpha = .2) + # alpha doesn't work
   theme_bw()
 ```
 
@@ -758,17 +809,7 @@ bal.plot(f_lin, data = Algebra_dat,
 
 # Better Match: Density Plots
 
-
-```
-## Warning: `expand_scale()` is deprecated; use `expansion()` instead.
-```
-
-```
-## Scale for 'fill' is already present. Adding another scale for 'fill', which
-## will replace the existing scale.
-```
-
-![](cobalt_pres_files/figure-html/unnamed-chunk-37-1.png)&lt;!-- --&gt;
+&lt;img src="cobalt_pres_files/figure-html/unnamed-chunk-37-1.png" style="display: block; margin: auto;" /&gt;
 
 ---
 
@@ -776,10 +817,13 @@ bal.plot(f_lin, data = Algebra_dat,
 
 
 ```r
-b_m2 &lt;- bal.tab(f_lin, data = Algebra_dat, 
-                  weights = data.frame(bad = get.w(m_out),
-                                       better = get.w(better_match)),
-                  method = "weighting", int = TRUE, estimand = "ATT")
+b_m2 &lt;- bal.tab(f_lin, 
+                data = Algebra_dat, 
+                  weights = data.frame(
+                    bad = get.w(m_out),
+                    better = get.w(better_match)),
+                method = "weighting", 
+                int = TRUE)
 
 b_m2
 ```
@@ -792,33 +836,28 @@ b_m2
 ```
 ## Balance Measures
 ##                           Type Diff.bad Diff.better
-## Math                   Contin.   0.7189      0.0839
-## SES                    Contin.   1.9535      0.0595
-## Locale_Rural            Binary  -0.0359     -0.0508
-## Locale_Suburban         Binary   0.1128     -0.0656
-## Locale_Urban            Binary  -0.0769      0.1164
-## Math * SES             Contin.   2.1235      0.1086
-## Math * Locale_Rural    Contin.  -0.0535     -0.1247
-## Math * Locale_Suburban Contin.   0.2715     -0.1218
-## Math * Locale_Urban    Contin.  -0.1052      0.2401
-## SES * Locale_Rural     Contin.   0.1167     -0.1331
-## SES * Locale_Suburban  Contin.   0.4616     -0.1377
-## SES * Locale_Urban     Contin.   0.1700      0.2693
+## Math                   Contin.   0.7345      0.0742
+## SES                    Contin.   2.1569      0.0475
+## Locale_Rural            Binary  -0.0359     -0.0656
+## Locale_Suburban         Binary   0.1128     -0.0311
+## Locale_Urban            Binary  -0.0769      0.0967
+## Math * SES             Contin.   2.6481      0.0935
+## Math * Locale_Rural    Contin.  -0.0540     -0.1540
+## Math * Locale_Suburban Contin.   0.3019     -0.0625
+## Math * Locale_Urban    Contin.  -0.1075      0.2032
+## SES * Locale_Rural     Contin.   0.1500     -0.1875
+## SES * Locale_Suburban  Contin.   0.6452     -0.0683
+## SES * Locale_Urban     Contin.   0.2251      0.2392
 ## 
 ## Effective sample sizes
 ##        Control Treated
 ## All    390.000     610
 ## bad    390.000     390
-## better  35.364     610
+## better  33.093     610
 ```
 
 ---
-
-class: inverse, middle, center, cobBack
-
-# Thank you!!
-
----
+class: inverse, cobBack
 
 # References
 
@@ -832,12 +871,13 @@ Austin, P. C. (2011). An Introduction to Propensity Score Methods for Reducing t
 
 
 ---
+class: inverse, cobBack
 
 # References
 
 Austin, P. C., &amp; Stuart, E. A. (2015). Moving towards best practice when using inverse probability of treatment weighting (IPTW) using the propensity score to estimate causal treatment effects in observational studies. Statistics in Medicine, 34(28), 3661–3679. http://doi.org/10.1002/sim.6607
 
-Greifer, N. (2017). cobalt: Covariate Balance Tables and Plots. R package version 3.0.0.
+Greifer, N. (2020). cobalt: Covariate Balance Tables and Plots. R package version 3.0.0.
 
 Imai, K., King, G., &amp; Stuart, E. A. (2008). Misunderstandings between experimentalists and observationalists about causal inference. Journal of the royal statistical society: series A (statistics in society), 171(2), 481-502.
 
@@ -847,6 +887,7 @@ Rubin, D. B. (2001). Using Propensity Scores to Help Design Observational Studie
 
 
 ---
+class: inverse, cobBack
 
 # References
 

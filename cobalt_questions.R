@@ -38,9 +38,6 @@ lalonde <- lalonde %>%
   mutate(trt = if_else(treat == 1, "treatment", "control"))
 
 # I am trying to get something like this to see the proportion more easily?
-ggplot(lalonde, aes(x = trt, fill = race)) +
-  geom_bar(position = "fill") + 
-  theme_bw()
 
 ggplot(lalonde, aes(x = race, fill = trt)) +
   geom_bar(position = "fill") + 
